@@ -1,11 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Documento</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="Arma tu equipo Pokémon con 1000 créditos y enfréntate a 4 rivales aleatorios. El mayor ataque total gana.">
+  <title>Pokémon Battle Arena — Gen 1</title>
+
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
 </head>
+
 <body>
-    
+  <div class="app-container">
+
+    <!-- ========== SECCIÓN HERO ========== -->
+    <header class="hero">
+      <div class="hero__pokeball" aria-hidden="true">⚔️</div>
+      <h1 class="hero__title">Pokémon Battle Arena</h1>
+      <p class="hero__subtitle">
+        Arma tu equipo con <strong>1000 créditos</strong>, elige sabiamente
+        y enfréntate a <strong>4 rivales</strong>. ¡El mayor ataque total gana!
+      </p>
+    </header>
+
+    <!-- ========== INDICADOR DE CARGA ========== -->
+    <div id="loading-overlay" class="loading-overlay" aria-live="polite">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p class="loading-text">Cargando Pokédex...</p>
+      <p id="loading-subtext" class="loading-subtext">Consultando PokéAPI</p>
+      <div class="loading-progress-track">
+        <div id="loading-progress-fill" class="loading-progress-fill"></div>
+      </div>
+    </div>
+
+    <!-- ========== CONSTRUCTOR DE EQUIPO ========== -->
+    <section id="team-builder" class="team-builder" aria-label="Constructor de equipo" style="display:none;">
+
+      <!-- Barra de presupuesto -->
+      <div class="budget-panel">
+        <div class="budget-header">
+          <span class="budget-title">💰 Presupuesto</span>
+          <span id="budget-text" class="budget-text">0 / 1000 créditos</span>
+        </div>
+        <div class="budget-bar-track" role="progressbar" aria-label="Créditos usados">
+          <div id="budget-fill" class="budget-fill budget-fill--ok"></div>
+        </div>
+      </div>
+
+      <!-- Mi equipo -->
+      <div class="my-team-section">
+        <div class="my-team-section-header">
+          <h2 class="section-title">🛡️ Mi Equipo <span id="team-count" class="team-count">(0/6)</span></h2>
+          <button id="btn-battle" class="btn btn--battle" type="button" disabled>
+            <span class="btn__icon" aria-hidden="true">⚔️</span>
+            ¡A Combatir!
+          </button>
+        </div>
+        <div id="my-team-slots" class="my-team-slots" aria-label="Slots del equipo">
+          <!-- Slots renderizados dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Pokédex -->
+      <div class="pokedex-section">
+        <div class="pokedex-header">
+          <h2 class="section-title">📖 Pokédex — Gen 1</h2>
+          <div class="pokedex-search-wrapper">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input
+              id="pokedex-search"
+              class="pokedex-search"
+              type="search"
+              placeholder="Buscar nombre o número..."
+              aria-label="Buscar Pokémon en el Pokédex"
+            >
+          </div>
+        </div>
+        <div id="pokedex-grid" class="pokedex-grid" aria-label="Lista de Pokémon disponibles">
+          <!-- Tarjetas renderizadas dinámicamente -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========== ARENA DE BATALLA ========== -->
+    <section id="battle-arena" class="battle-arena" aria-label="Arena de batalla" hidden>
+
+      <div class="battle-arena-header">
+        <h2 class="battle-arena-title">⚔️ Resultados del Combate</h2>
+        <div class="my-attack-display">
+          <span class="my-attack-label">Tu ataque total:</span>
+          <span id="my-total-attack" class="my-attack-value">0</span>
+        </div>
+      </div>
+
+      <div id="rivals-container" class="rivals-container">
+        <!-- Rivales renderizados dinámicamente -->
+      </div>
+
+      <div class="battle-actions">
+        <button id="btn-rematch" class="btn btn--secondary" type="button">
+          <span class="btn__icon" aria-hidden="true">🔄</span>
+          Nuevo Combate
+        </button>
+        <button id="btn-change-team" class="btn btn--ghost" type="button">
+          <span class="btn__icon" aria-hidden="true">🛡️</span>
+          Cambiar Equipo
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="footer">
+      <p>
+        Datos de <a href="https://pokeapi.co/" target="_blank" rel="noopener">PokéAPI</a>
+        · Almacenamiento con <a href="https://firebase.google.com/" target="_blank" rel="noopener">Firebase</a>
+        · 2026
+      </p>
+    </footer>
+
+  </div>
+
+  <!-- ========== TOAST CONTAINER ========== -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- ========== SCRIPTS ========== -->
+  <script type="module" src="script.js"></script>
+
 </body>
+
 </html>
