@@ -40,7 +40,7 @@ const GEN1_LEGENDARY_IDS = new Set([144, 145, 146, 150, 151]);
  * @returns {number}
  */
 function calculateBaseCost(totalBaseStats) {
-  return Math.round(totalBaseStats / 2);
+  return Math.round(totalBaseStats / 3) + 30;
 }
 
 /* ============================================
