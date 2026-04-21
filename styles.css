@@ -9,63 +9,70 @@
 
 /* ---- Variables CSS (Design Tokens) ---- */
 :root {
-  /* Colores principales */
-  --color-bg-primary: #0a0a14;
-  --color-bg-secondary: #111124;
-  --color-bg-card: rgba(25, 25, 50, 0.75);
-  --color-bg-team: rgba(20, 20, 45, 0.6);
-  --color-surface: rgba(255, 255, 255, 0.04);
-  --color-surface-hover: rgba(255, 255, 255, 0.07);
+  /* ── Paleta principal del proyecto ── */
+  --color-primary:   #2C3E50;   /* azul oscuro  — fondos, headers, cards */
+  --color-secondary: #7F8C8D;   /* gris         — textos secundarios, bordes */
+  --color-accent:    #F1C40F;   /* amarillo      — acentos, costos, highlights */
+  --color-danger:    #C0392B;   /* rojo          — combate, peligro, errores */
+  --color-light:     #F4F6F7;   /* fondo claro   — texto principal sobre oscuro */
 
-  /* Acentos */
-  --color-accent-red: #e63946;
-  --color-accent-gold: #f4a261;
-  --color-accent-blue: #457b9d;
-  --color-accent-light: #a8dadc;
-  --color-accent-green: #2ecc71;
+  /* ── Fondos derivados de --color-primary ── */
+  --color-bg-primary:   #0d1117;                      /* negro azulado base */
+  --color-bg-secondary: #1a2332;                      /* primario oscurecido */
+  --color-bg-card:      rgba(44, 62, 80, 0.72);       /* card con primary */
+  --color-bg-team:      rgba(26, 35, 50, 0.65);
+  --color-surface:      rgba(244, 246, 247, 0.04);    /* light muy transparente */
+  --color-surface-hover:rgba(244, 246, 247, 0.07);
+
+  /* ── Acentos extendidos ── */
+  --color-accent-red:    var(--color-danger);          /* alias para danger */
+  --color-accent-gold:   var(--color-accent);          /* alias para accent */
+  --color-accent-blue:   #457b9d;
+  --color-accent-light:  #a8dadc;
+  --color-accent-green:  #2ecc71;
   --color-accent-purple: #9b59b6;
 
-  /* Texto */
-  --color-text-primary: #f1faee;
-  --color-text-secondary: #a8b2d1;
-  --color-text-muted: #5b6394;
+  /* ── Texto ── */
+  --color-text-primary:   var(--color-light);          /* texto principal */
+  --color-text-secondary: var(--color-secondary);      /* texto secundario */
+  --color-text-muted:     #4e5d6c;
 
-  /* Bordes */
-  --color-border: rgba(255, 255, 255, 0.07);
-  --color-border-hover: rgba(255, 255, 255, 0.15);
-  --color-border-accent: rgba(230, 57, 70, 0.3);
+  /* ── Bordes ── */
+  --color-border:        rgba(127, 140, 141, 0.18);   /* secondary transparente */
+  --color-border-hover:  rgba(244, 246, 247, 0.22);   /* light transparente */
+  --color-border-accent: rgba(192, 57, 43, 0.35);     /* danger transparente */
 
-  /* Sombras */
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.25);
-  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --shadow-card-hover: 0 14px 44px rgba(0, 0, 0, 0.55);
-  --shadow-glow-red: 0 0 24px rgba(230, 57, 70, 0.2);
-  --shadow-glow-gold: 0 0 24px rgba(244, 162, 97, 0.2);
+  /* ── Sombras ── */
+  --shadow-sm:         0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-card:       0 8px 32px rgba(0, 0, 0, 0.45);
+  --shadow-card-hover: 0 14px 44px rgba(0, 0, 0, 0.6);
+  --shadow-glow-red:   0 0 24px rgba(192, 57, 43, 0.25);
+  --shadow-glow-gold:  0 0 24px rgba(241, 196, 15, 0.22);
   --shadow-glow-green: 0 0 24px rgba(46, 204, 113, 0.25);
 
-  /* Radios */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
+  /* ── Radios ── */
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --radius-xl:  20px;
   --radius-2xl: 28px;
 
-  /* Espaciado */
-  --spacing-xs: 0.4rem;
-  --spacing-sm: 0.75rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
+  /* ── Espaciado ── */
+  --spacing-xs:  0.4rem;
+  --spacing-sm:  0.75rem;
+  --spacing-md:  1rem;
+  --spacing-lg:  1.5rem;
+  --spacing-xl:  2rem;
   --spacing-2xl: 3rem;
 
-  /* Tipografía */
+  /* ── Tipografía ── */
   --font-display: 'Outfit', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-body:    'Inter', sans-serif;
 
-  /* Transiciones */
-  --transition-fast: 0.18s ease;
+  /* ── Transiciones ── */
+  --transition-fast:   0.18s ease;
   --transition-normal: 0.28s ease;
-  --transition-slow: 0.5s ease;
+  --transition-slow:   0.5s ease;
 }
 
 /* ---- Reset ---- */
@@ -87,6 +94,8 @@ body {
   min-height: 100vh;
   line-height: 1.6;
   overflow-x: hidden;
+  /* Textura sutil derivada de --color-primary */
+  background-image: linear-gradient(180deg, #0d1117 0%, #111d2b 100%);
 }
 
 /* Fondo con gradientes decorativos */
@@ -131,7 +140,8 @@ body::before {
   font-family: var(--font-display);
   font-size: clamp(2rem, 5vw, 3.5rem);
   font-weight: 800;
-  background: linear-gradient(135deg, var(--color-accent-red), var(--color-accent-gold));
+  /* Gradiente: danger → accent (rojo → amarillo) */
+  background: linear-gradient(135deg, var(--color-danger), var(--color-accent));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -218,12 +228,13 @@ body::before {
    ============================================ */
 
 .budget-panel {
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
+  background: rgba(44, 62, 80, 0.6);           /* primary */
+  border: 1px solid rgba(127, 140, 141, 0.2);   /* secondary */
   border-radius: var(--radius-xl);
   padding: var(--spacing-lg) var(--spacing-xl);
   backdrop-filter: blur(12px);
   margin-bottom: var(--spacing-lg);
+  box-shadow: inset 0 1px 0 rgba(244, 246, 247, 0.05); /* light sutil */
 }
 
 .budget-header {
@@ -245,7 +256,7 @@ body::before {
   font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 700;
-  color: var(--color-accent-gold);
+  color: var(--color-accent);   /* amarillo */
 }
 
 .budget-bar-track {
@@ -263,16 +274,16 @@ body::before {
 }
 
 .budget-fill--ok      { background: linear-gradient(90deg, #2ecc71, #27ae60); }
-.budget-fill--warning { background: linear-gradient(90deg, #f39c12, #e67e22); }
-.budget-fill--danger  { background: linear-gradient(90deg, #e63946, #c0392b); }
+.budget-fill--warning { background: linear-gradient(90deg, var(--color-accent), #d4a00d); } /* accent */
+.budget-fill--danger  { background: linear-gradient(90deg, var(--color-danger), #96211a); } /* danger */
 
 /* ============================================
    MI EQUIPO (SLOTS)
    ============================================ */
 
 .my-team-section {
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
+  background: rgba(44, 62, 80, 0.55);           /* primary */
+  border: 1px solid rgba(127, 140, 141, 0.18);  /* secondary */
   border-radius: var(--radius-xl);
   padding: var(--spacing-lg) var(--spacing-xl);
   backdrop-filter: blur(12px);
@@ -366,13 +377,13 @@ body::before {
 
 .team-slot__cost {
   font-size: 0.58rem;
-  color: var(--color-accent-gold);
+  color: var(--color-accent);    /* amarillo */
   font-weight: 600;
 }
 
 .team-slot__attack {
   font-size: 0.58rem;
-  color: var(--color-accent-red);
+  color: var(--color-danger);    /* rojo */
   font-weight: 600;
 }
 
@@ -383,8 +394,8 @@ body::before {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: rgba(230, 57, 70, 0.8);
-  color: white;
+  background: rgba(192, 57, 43, 0.85);  /* danger */
+  color: var(--color-light);
   border: none;
   font-size: 0.6rem;
   cursor: pointer;
@@ -404,7 +415,7 @@ body::before {
 
 .team-slot__remove:hover {
   transform: scale(1.2);
-  background: var(--color-accent-red);
+  background: var(--color-danger);   /* danger */
 }
 
 /* ============================================
@@ -444,16 +455,18 @@ body::before {
 }
 
 .btn--battle {
-  background: linear-gradient(135deg, #e63946, #9b2335);
-  color: white;
-  box-shadow: 0 4px 16px rgba(230, 57, 70, 0.35);
+  /* danger + acento amarillo al hover para mayor impacto visual */
+  background: linear-gradient(135deg, var(--color-danger), #96211a);
+  color: var(--color-light);
+  box-shadow: 0 4px 16px rgba(192, 57, 43, 0.4);
   font-size: 1rem;
   padding: 0.85rem 2rem;
 }
 
 .btn--battle:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 28px rgba(230, 57, 70, 0.55);
+  box-shadow: 0 6px 28px rgba(192, 57, 43, 0.6);
+  background: linear-gradient(135deg, #d44235, var(--color-danger));
 }
 
 .btn--battle:disabled {
@@ -463,27 +476,27 @@ body::before {
 }
 
 .btn--secondary {
-  background: var(--color-bg-card);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
+  background: rgba(44, 62, 80, 0.55);   /* primary semitransparente */
+  color: var(--color-light);
+  border: 1px solid rgba(127, 140, 141, 0.25); /* secondary */
   backdrop-filter: blur(10px);
 }
 
 .btn--secondary:hover {
-  border-color: var(--color-border-hover);
-  background: rgba(40, 40, 70, 0.85);
+  border-color: rgba(241, 196, 15, 0.4);  /* accent al hover */
+  background: rgba(44, 62, 80, 0.75);
   transform: translateY(-2px);
 }
 
 .btn--ghost {
   background: transparent;
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
+  color: var(--color-secondary);
+  border: 1px solid rgba(127, 140, 141, 0.2);
 }
 
 .btn--ghost:hover {
-  border-color: var(--color-border-hover);
-  color: var(--color-text-primary);
+  border-color: rgba(241, 196, 15, 0.35); /* accent */
+  color: var(--color-light);
   transform: translateY(-2px);
 }
 
@@ -496,8 +509,8 @@ body::before {
    ============================================ */
 
 .pokedex-section {
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
+  background: rgba(44, 62, 80, 0.50);           /* primary */
+  border: 1px solid rgba(127, 140, 141, 0.18);  /* secondary */
   border-radius: var(--radius-xl);
   padding: var(--spacing-lg) var(--spacing-xl);
   backdrop-filter: blur(12px);
@@ -543,9 +556,9 @@ body::before {
 }
 
 .pokedex-search:focus {
-  border-color: var(--color-accent-red);
-  background: rgba(255, 255, 255, 0.07);
-  box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
+  border-color: var(--color-accent);             /* amarillo al enfocar */
+  background: rgba(244, 246, 247, 0.06);
+  box-shadow: 0 0 0 3px rgba(241, 196, 15, 0.12);
 }
 
 /* Grid del Pokédex */
@@ -682,11 +695,11 @@ body::before {
 }
 
 .pkdx-stat {
-  color: var(--color-accent-red);
+  color: var(--color-danger);   /* rojo */
 }
 
 .pkdx-cost {
-  color: var(--color-accent-gold);
+  color: var(--color-accent);   /* amarillo */
 }
 
 .pkdx-card__btn {
@@ -703,13 +716,13 @@ body::before {
 }
 
 .pkdx-card__btn--add {
-  background: linear-gradient(135deg, var(--color-accent-red), #c0392b);
-  color: white;
+  background: linear-gradient(135deg, var(--color-danger), #96211a); /* danger */
+  color: var(--color-light);
 }
 
 .pkdx-card__btn--add:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 3px 10px rgba(230, 57, 70, 0.4);
+  box-shadow: 0 3px 10px rgba(192, 57, 43, 0.45);
 }
 
 .pkdx-card__btn--add:disabled {
@@ -785,8 +798,8 @@ body::before {
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-xl);
   padding: var(--spacing-lg) var(--spacing-xl);
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border-accent);
+  background: rgba(44, 62, 80, 0.65);           /* primary */
+  border: 1px solid rgba(192, 57, 43, 0.35);    /* danger */
   border-radius: var(--radius-xl);
   backdrop-filter: blur(12px);
 }
@@ -795,7 +808,8 @@ body::before {
   font-family: var(--font-display);
   font-size: 1.6rem;
   font-weight: 800;
-  background: linear-gradient(135deg, var(--color-accent-red), var(--color-accent-gold));
+  /* danger → accent (rojo → amarillo) */
+  background: linear-gradient(135deg, var(--color-danger), var(--color-accent));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -805,8 +819,8 @@ body::before {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  background: rgba(230, 57, 70, 0.1);
-  border: 1px solid rgba(230, 57, 70, 0.25);
+  background: rgba(192, 57, 43, 0.1);  /* danger suave */
+  border: 1px solid rgba(192, 57, 43, 0.3);
   border-radius: var(--radius-lg);
   padding: var(--spacing-sm) var(--spacing-lg);
 }
@@ -814,7 +828,7 @@ body::before {
 .my-attack-label {
   font-family: var(--font-display);
   font-size: 0.9rem;
-  color: var(--color-text-secondary);
+  color: var(--color-secondary);   /* gris */
   font-weight: 600;
 }
 
@@ -822,7 +836,7 @@ body::before {
   font-family: var(--font-display);
   font-size: 1.8rem;
   font-weight: 800;
-  color: var(--color-accent-red);
+  color: var(--color-danger);      /* rojo */
   line-height: 1;
 }
 
@@ -836,8 +850,8 @@ body::before {
 
 /* Equipo rival */
 .rival-team {
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
+  background: rgba(44, 62, 80, 0.5);            /* primary */
+  border: 1px solid rgba(127, 140, 141, 0.18);  /* secondary */
   border-radius: var(--radius-xl);
   padding: var(--spacing-lg);
   backdrop-filter: blur(12px);
@@ -856,11 +870,11 @@ body::before {
 }
 
 .rival-team.result--loss {
-  border-color: rgba(230, 57, 70, 0.3);
+  border-color: rgba(192, 57, 43, 0.35);   /* danger */
 }
 
 .rival-team.result--tie {
-  border-color: rgba(244, 162, 97, 0.3);
+  border-color: rgba(241, 196, 15, 0.3);   /* accent */
 }
 
 .rival-team-header {
@@ -896,15 +910,15 @@ body::before {
 }
 
 .rival-result-badge.result--loss {
-  background: rgba(230, 57, 70, 0.12);
-  color: #e63946;
-  border: 1px solid rgba(230, 57, 70, 0.3);
+  background: rgba(192, 57, 43, 0.14);    /* danger */
+  color: var(--color-danger);
+  border: 1px solid rgba(192, 57, 43, 0.3);
 }
 
 .rival-result-badge.result--tie {
-  background: rgba(244, 162, 97, 0.12);
-  color: var(--color-accent-gold);
-  border: 1px solid rgba(244, 162, 97, 0.3);
+  background: rgba(241, 196, 15, 0.12);   /* accent */
+  color: var(--color-accent);
+  border: 1px solid rgba(241, 196, 15, 0.3);
 }
 
 /* Info de ataques del rival */
