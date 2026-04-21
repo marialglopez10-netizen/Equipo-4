@@ -1142,3 +1142,686 @@ body::before {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================
+   BANNER DE PENALIZACIÓN (aparece al perder)
+   ============================================ */
+
+.penalty-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background: rgba(192, 57, 43, 0.12);
+  border: 1px solid rgba(192, 57, 43, 0.35);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-xs) var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  animation: fadeIn 0.4s ease;
+}
+
+.penalty-banner-icon { font-size: 1.1rem; }
+
+.penalty-banner-text {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-danger);
+}
+
+/* ============================================
+   BADGE LEGENDARIO EN POKÉDEX
+   ============================================ */
+
+.pkdx-card--legendary {
+  border-color: rgba(155, 89, 182, 0.45) !important;
+  background: rgba(80, 40, 100, 0.2) !important;
+  cursor: not-allowed;
+}
+
+.pkdx-card--legendary::before {
+  background: linear-gradient(90deg, #9b59b6, #8e44ad) !important;
+  opacity: 1 !important;
+}
+
+.legendary-badge {
+  position: absolute;
+  top: 28px;
+  left: 0;
+  right: 0;
+  font-family: var(--font-display);
+  font-size: 0.55rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(155, 89, 182, 0.85);
+  color: white;
+  padding: 2px 0;
+  text-align: center;
+  z-index: 2;
+}
+
+/* Costo con penalización resaltada */
+.pkdx-cost--boosted {
+  color: var(--color-danger) !important;
+  font-weight: 700;
+}
+
+.pkdx-cost--boosted small {
+  font-size: 0.7em;
+  opacity: 0.8;
+  margin-left: 2px;
+}
+
+/* ============================================
+   ARENA DE BATALLA — Contenedor dinámico
+   ============================================ */
+
+.battle-arena {
+  margin-top: var(--spacing-xl);
+  animation: slideUp 0.45s ease;
+}
+
+.battle-arena-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* ============================================
+   BARRA DE PROGRESO DEL COMBATE
+   ============================================ */
+
+.battle-progress {
+  background: rgba(44, 62, 80, 0.65);
+  border: 1px solid rgba(127, 140, 141, 0.2);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  backdrop-filter: blur(12px);
+}
+
+.battle-progress-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.battle-progress-label {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-light);
+}
+
+.battle-progress-counter {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  color: var(--color-secondary);
+  font-weight: 600;
+}
+
+.bp-defeated {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-accent);
+}
+
+.bp-total { color: var(--color-secondary); }
+.bp-sep   { color: var(--color-secondary); }
+.bp-text  { color: var(--color-secondary); }
+
+.battle-progress-track {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: var(--spacing-xs);
+}
+
+.battle-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-danger), var(--color-accent));
+  border-radius: 10px;
+  transition: width 0.6s ease;
+}
+
+.battle-progress-hint {
+  font-size: 0.8rem;
+  color: var(--color-secondary);
+  margin-top: var(--spacing-xs);
+}
+
+/* ============================================
+   ATAQUE DEL JUGADOR
+   ============================================ */
+
+.battle-my-attack {
+  display: flex;
+  justify-content: center;
+}
+
+.battle-my-attack-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  background: rgba(192, 57, 43, 0.1);
+  border: 1px solid rgba(192, 57, 43, 0.3);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-sm) var(--spacing-xl);
+  backdrop-filter: blur(8px);
+}
+
+.bma-label {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-secondary);
+}
+
+.bma-value {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--color-danger);
+  line-height: 1;
+}
+
+/* ============================================
+   REJILLA DE TARJETAS DE RIVALES
+   ============================================ */
+
+.rival-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-lg);
+}
+
+/* ---- Tarjeta de rival individual ---- */
+.rival-card {
+  background: rgba(44, 62, 80, 0.55);
+  border: 1px solid rgba(127, 140, 141, 0.2);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg);
+  backdrop-filter: blur(12px);
+  transition: all var(--transition-normal);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  animation: slideUp 0.4s ease backwards;
+}
+
+.rival-card:nth-child(1) { animation-delay: 0.05s; }
+.rival-card:nth-child(2) { animation-delay: 0.12s; }
+.rival-card:nth-child(3) { animation-delay: 0.19s; }
+.rival-card:nth-child(4) { animation-delay: 0.26s; }
+
+.rival-card--active {
+  border-color: rgba(192, 57, 43, 0.25);
+}
+
+.rival-card--active:hover {
+  border-color: rgba(192, 57, 43, 0.5);
+  box-shadow: 0 0 20px rgba(192, 57, 43, 0.12);
+  transform: translateY(-2px);
+}
+
+.rival-card--defeated {
+  border-color: rgba(46, 204, 113, 0.35);
+  box-shadow: 0 0 16px rgba(46, 204, 113, 0.08);
+  opacity: 0.85;
+}
+
+/* ---- Header de la tarjeta ---- */
+.rival-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+}
+
+.rival-card-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-light);
+}
+
+/* ---- Badge de estado ---- */
+.rival-status-badge {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rival-status--defeated {
+  background: rgba(46, 204, 113, 0.14);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.rival-status--unknown {
+  background: rgba(127, 140, 141, 0.12);
+  color: var(--color-secondary);
+  border: 1px solid rgba(127, 140, 141, 0.25);
+}
+
+/* ---- Info de ataque ---- */
+.rival-atk-info {
+  font-size: 0.78rem;
+  color: var(--color-secondary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.rival-atk-info--revealed { color: var(--color-light); }
+.rival-atk-info--revealed strong { color: var(--color-accent); }
+.rival-atk-info--hidden strong { color: var(--color-secondary); letter-spacing: 0.1em; }
+
+/* ---- Pokémon dentro de la tarjeta ---- */
+.rival-pokemon-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 5px;
+}
+
+.rival-pokemon {
+  aspect-ratio: 1;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.rival-pokemon__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  transition: filter 0.7s ease, transform var(--transition-normal);
+}
+
+/* Silueta negra para rivales no derrotados */
+.rival-pokemon--mystery .rival-pokemon__img {
+  filter: brightness(0) saturate(0);
+}
+
+.rival-pokemon--mystery:hover .rival-pokemon__img {
+  filter: brightness(0.08) saturate(0);
+}
+
+/* Imagen a color para rivales derrotados */
+.rival-pokemon--revealed .rival-pokemon__img {
+  filter: none;
+  animation: revealImage 0.6s ease;
+}
+
+@keyframes revealImage {
+  from { filter: brightness(0) saturate(0); }
+  to   { filter: none; }
+}
+
+.rival-pokemon:hover {
+  transform: scale(1.06);
+}
+
+/* ---- Footer de la tarjeta ---- */
+.rival-card-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--spacing-xs);
+}
+
+.rival-defeated-label {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #2ecc71;
+  padding: 6px 16px;
+  background: rgba(46, 204, 113, 0.08);
+  border: 1px solid rgba(46, 204, 113, 0.2);
+  border-radius: 20px;
+}
+
+/* ---- Botón Desafiar ---- */
+.btn--challenge {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 800;
+  padding: 0.65rem 1.6rem;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--color-danger), #96211a);
+  color: var(--color-light);
+  box-shadow: 0 4px 14px rgba(192, 57, 43, 0.35);
+  transition: all var(--transition-normal);
+  letter-spacing: 0.03em;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn--challenge::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn--challenge:hover::after { left: 100%; }
+
+.btn--challenge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(192, 57, 43, 0.55);
+}
+
+.btn--challenge:active {
+  transform: translateY(0);
+}
+
+/* ============================================
+   PANTALLA DE GAME OVER
+   ============================================ */
+
+.game-over-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl) 0;
+  animation: fadeIn 0.5s ease;
+}
+
+.game-over-banner {
+  width: 100%;
+  max-width: 560px;
+  text-align: center;
+  background: rgba(44, 62, 80, 0.7);
+  border: 1px solid rgba(192, 57, 43, 0.4);
+  border-radius: var(--radius-2xl);
+  padding: var(--spacing-xl) var(--spacing-2xl);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 0 40px rgba(192, 57, 43, 0.12);
+}
+
+.game-over-icon {
+  font-size: 3.5rem;
+  margin-bottom: var(--spacing-sm);
+  animation: pulse 1.5s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.08); }
+}
+
+.game-over-title {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--color-danger);
+  margin-bottom: var(--spacing-xs);
+  letter-spacing: -0.02em;
+}
+
+.game-over-desc {
+  font-size: 0.95rem;
+  color: var(--color-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Stats del combate perdido */
+.game-over-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xl);
+  flex-wrap: wrap;
+}
+
+.go-stat-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.go-stat-label {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  color: var(--color-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.go-stat-value {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.go-stat-value--win  { color: var(--color-danger); }
+.go-stat-value--loss { color: var(--color-secondary); }
+
+.go-stat-vs {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-secondary);
+  opacity: 0.6;
+}
+
+/* Banner de aumento de precio */
+.price-penalty-banner {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  background: rgba(241, 196, 15, 0.08);
+  border: 1px solid rgba(241, 196, 15, 0.3);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-md) var(--spacing-lg);
+  animation: slideUp 0.4s ease 0.2s backwards;
+}
+
+.ppb-icon { font-size: 1.6rem; }
+
+.ppb-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ppb-text strong {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--color-accent);
+}
+
+.ppb-text span {
+  font-size: 0.78rem;
+  color: var(--color-secondary);
+}
+
+/* Avisos de equipo */
+.go-team-alert {
+  width: 100%;
+  max-width: 560px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-danger);
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.25);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: center;
+}
+
+.go-team-ok {
+  width: 100%;
+  max-width: 560px;
+  font-size: 0.85rem;
+  color: var(--color-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: center;
+}
+
+/* ============================================
+   PANTALLA DE VICTORIA
+   ============================================ */
+
+.victory-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl) 0;
+  animation: fadeIn 0.5s ease;
+}
+
+.victory-banner {
+  width: 100%;
+  max-width: 560px;
+  text-align: center;
+  background: rgba(44, 62, 80, 0.7);
+  border: 1px solid rgba(241, 196, 15, 0.4);
+  border-radius: var(--radius-2xl);
+  padding: var(--spacing-xl) var(--spacing-2xl);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 0 50px rgba(241, 196, 15, 0.12);
+}
+
+.victory-icon {
+  font-size: 3.5rem;
+  margin-bottom: var(--spacing-sm);
+  animation: float 2s ease-in-out infinite;
+}
+
+.victory-title {
+  font-family: var(--font-display);
+  font-size: 2.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--color-danger), var(--color-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--spacing-xs);
+}
+
+.victory-subtitle {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--color-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.victory-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xl);
+  flex-wrap: wrap;
+}
+
+.victory-rivals-summary {
+  width: 100%;
+  max-width: 560px;
+  background: rgba(44, 62, 80, 0.5);
+  border: 1px solid rgba(127, 140, 141, 0.18);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.vrs-title {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--spacing-xs);
+}
+
+.victory-rival-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-sm);
+}
+
+.vrr-label {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-light);
+}
+
+.vrr-atk {
+  font-size: 0.8rem;
+  color: var(--color-secondary);
+}
+
+.vrr-result {
+  font-size: 1rem;
+}
+
+/* ============================================
+   RESPONSIVE — BATALLA
+   ============================================ */
+
+@media (max-width: 768px) {
+  .rival-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .game-over-stats-row,
+  .victory-stats-row {
+    gap: var(--spacing-md);
+  }
+
+  .go-stat-value,
+  .bma-value {
+    font-size: 1.6rem;
+  }
+
+  .battle-progress-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .rival-pokemon-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .game-over-banner,
+  .victory-banner,
+  .price-penalty-banner,
+  .victory-rivals-summary {
+    padding: var(--spacing-md);
+  }
+}

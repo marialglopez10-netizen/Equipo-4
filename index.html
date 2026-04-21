@@ -41,7 +41,13 @@
 
       <!-- Barra de presupuesto -->
       <div class="budget-panel">
-        <div class="budget-header">
+        <!-- Banner de penalización por derrota (oculto por defecto) -->
+      <div id="penalty-banner" class="penalty-banner" style="display:none;">
+        <span class="penalty-banner-icon" aria-hidden="true">📈</span>
+        <span id="penalty-text" class="penalty-banner-text"></span>
+      </div>
+
+      <div class="budget-header">
           <span class="budget-title">💰 Presupuesto</span>
           <span id="budget-text" class="budget-text">0 / 1000 créditos</span>
         </div>
@@ -88,30 +94,9 @@
 
     <!-- ========== ARENA DE BATALLA ========== -->
     <section id="battle-arena" class="battle-arena" aria-label="Arena de batalla" hidden>
-
-      <div class="battle-arena-header">
-        <h2 class="battle-arena-title">⚔️ Resultados del Combate</h2>
-        <div class="my-attack-display">
-          <span class="my-attack-label">Tu ataque total:</span>
-          <span id="my-total-attack" class="my-attack-value">0</span>
-        </div>
+      <div id="battle-arena-content" class="battle-arena-content">
+        <!-- Todo el contenido de batalla se renderiza dinámicamente desde script.js -->
       </div>
-
-      <div id="rivals-container" class="rivals-container">
-        <!-- Rivales renderizados dinámicamente -->
-      </div>
-
-      <div class="battle-actions">
-        <button id="btn-rematch" class="btn btn--secondary" type="button">
-          <span class="btn__icon" aria-hidden="true">🔄</span>
-          Nuevo Combate
-        </button>
-        <button id="btn-change-team" class="btn btn--ghost" type="button">
-          <span class="btn__icon" aria-hidden="true">🛡️</span>
-          Cambiar Equipo
-        </button>
-      </div>
-
     </section>
 
     <!-- ========== FOOTER ========== -->
