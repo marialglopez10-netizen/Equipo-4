@@ -1,152 +1,97 @@
 /* ============================================
-   SCRIPT.JS — Lógica principal del Generador
-   de Equipos Pokémon.
-   
+   SCRIPT.JS — Lógica principal de Pokémon Battle Arena.
+
    Responsabilidades:
-   - Obtener Pokémon de la primera generación desde PokéAPI
-   - Seleccionar aleatoriamente 36 Pokémon únicos
-   - Agruparlos en 6 equipos de 6
-   - Renderizar los equipos en pantalla
-   - Coordinar guardado y carga desde Firebase
+   - Cargar todos los Pokémon de Gen 1 con sus stats
+   - Calcular el costo automático de cada Pokémon
+   - Gestionar el equipo del jugador (máx 6, máx 1000 créditos)
+   - Renderizar el Pokédex con búsqueda en tiempo real
+   - Generar 4 equipos rivales aleatorios al combatir
+   - Calcular ganador por sumatoria de stat de Ataque
+   - Mostrar rivales solo con imagen (sin stats ni nombre)
+   - Guardar resultados en Firebase Firestore
    ============================================ */
 
-import { saveTeamGeneration, loadLastGeneration } from './firebase.js';
+import { saveBattleResult } from './firebase.js';
 
 /* ============================================
-   CONSTANTES DE CONFIGURACIÓN
+   CONSTANTES
    ============================================ */
-const POKEAPI_BASE_URL = 'https://pokeapi.co/api/v2';
-const TOTAL_TEAMS = 6;            // Número de equipos a generar
-const TEAM_SIZE = 6;              // Pokémon por equipo
-const TOTAL_POKEMON_NEEDED = TOTAL_TEAMS * TEAM_SIZE; // 36 en total
-const GEN1_POKEMON_COUNT = 151;   // Pokémon disponibles en la primera generación
+const POKEAPI_BASE_URL   = 'https://pokeapi.co/api/v2';
+const GEN1_POKEMON_COUNT = 151;    // Gen 1: ID 1 → 151
+const TEAM_SIZE          = 6;      // Pokémon por equipo
+const NUM_RIVALS         = 4;      // Equipos rivales
+const BUDGET             = 1000;   // Créditos disponibles
+const BATCH_SIZE         = 10;     // Peticiones en paralelo por lote
+
+/**
+ * Fórmula de costo automático.
+ * Se basa en la suma de todos los stats base del Pokémon.
+ * Rango aproximado:
+ *   Magikarp (BST 200) → 50 créditos
+ *   Pokémon promedio (BST ~400) → 100 créditos
+ *   Mewtwo (BST 680) → 170 créditos
+ * Con 1000 créditos y 6 slots, no es posible llenar el equipo
+ * solo con Pokémon legendarios, creando decisiones estratégicas.
+ *
+ * @param {number} totalBaseStats - Suma de los 6 stats base
+ * @returns {number} Costo en créditos
+ */
+function calculateCost(totalBaseStats) {
+  return Math.round(totalBaseStats / 4);
+}
+
+/* ============================================
+   ESTADO GLOBAL
+   ============================================ */
+let allPokemon  = [];   // Todos los Pokémon Gen 1 ya cargados
+let myTeam      = [];   // Equipo actual del jugador (máx 6)
+let searchQuery = '';   // Filtro de búsqueda del Pokédex
 
 /* ============================================
    REFERENCIAS DEL DOM
    ============================================ */
-const btnGenerate = document.getElementById('btn-generate');
-const btnLoadLast = document.getElementById('btn-load-last');
-const loadingOverlay = document.getElementById('loading-overlay');
-const loadingSubtext = document.getElementById('loading-subtext');
-const teamsContainer = document.getElementById('teams-container');
-const emptyState = document.getElementById('empty-state');
-const generationInfo = document.getElementById('generation-info');
-const generationDate = document.getElementById('generation-date');
-const toastContainer = document.getElementById('toast-container');
+const loadingOverlay      = document.getElementById('loading-overlay');
+const loadingSubtext      = document.getElementById('loading-subtext');
+const loadingProgressFill = document.getElementById('loading-progress-fill');
+const teamBuilder         = document.getElementById('team-builder');
+const budgetFill          = document.getElementById('budget-fill');
+const budgetText          = document.getElementById('budget-text');
+const teamCount           = document.getElementById('team-count');
+const myTeamSlots         = document.getElementById('my-team-slots');
+const btnBattle           = document.getElementById('btn-battle');
+const pokedexSearch       = document.getElementById('pokedex-search');
+const pokedexGrid         = document.getElementById('pokedex-grid');
+const battleArena         = document.getElementById('battle-arena');
+const rivalsContainer     = document.getElementById('rivals-container');
+const myTotalAttackEl     = document.getElementById('my-total-attack');
+const btnRematch          = document.getElementById('btn-rematch');
+const btnChangeTeam       = document.getElementById('btn-change-team');
+const toastContainer      = document.getElementById('toast-container');
 
 /* ============================================================
    SECCIÓN 1: OBTENCIÓN DE DATOS DESDE POKÉAPI
    ============================================================ */
 
 /**
- * Obtiene la lista completa de Pokémon de la primera generación
- * usando el endpoint de generación de PokéAPI.
- * 
- * El endpoint /generation/1 devuelve todas las especies
- * pertenecientes a la primera generación.
- * 
- * @returns {Array} Lista de objetos { name, url } de cada Pokémon Gen 1
- * @throws {Error} Si la petición a PokéAPI falla
+ * Obtiene la lista de especies de la primera generación.
+ * @returns {Array} Lista de { name, url }
  */
 async function fetchFirstGenPokemonList() {
-  try {
-    updateLoadingText('Obteniendo lista de la primera generación...');
-    const response = await fetch(`${POKEAPI_BASE_URL}/generation/1`);
-
-    if (!response.ok) {
-      throw new Error(`PokéAPI respondió con estado ${response.status}`);
-    }
-
-    const data = await response.json();
-    const pokemonSpecies = data.pokemon_species;
-
-    // Validar que hay al menos 36 Pokémon disponibles
-    if (!pokemonSpecies || pokemonSpecies.length < TOTAL_POKEMON_NEEDED) {
-      throw new Error(
-        `Se necesitan al menos ${TOTAL_POKEMON_NEEDED} Pokémon, ` +
-        `pero solo se encontraron ${pokemonSpecies?.length ?? 0}.`
-      );
-    }
-
-    console.log(`✅ ${pokemonSpecies.length} Pokémon de Gen 1 obtenidos.`);
-    return pokemonSpecies;
-  } catch (error) {
-    throw new Error(`Error al obtener la lista de Pokémon: ${error.message}`);
-  }
-}
-
-/**
- * Obtiene los detalles completos de un Pokémon por su nombre.
- * Consulta nombre, ID, sprite oficial y tipos.
- * 
- * @param {string} name - Nombre del Pokémon en minúsculas
- * @returns {Object} Objeto con { id, name, image, types }
- * @throws {Error} Si la petición falla para ese Pokémon específico
- */
-async function fetchPokemonDetails(name) {
-  const response = await fetch(`${POKEAPI_BASE_URL}/pokemon/${name}`);
-
+  const response = await fetch(`${POKEAPI_BASE_URL}/generation/1`);
   if (!response.ok) {
-    throw new Error(`No se pudo obtener detalles de "${name}" (estado ${response.status})`);
+    throw new Error(`PokéAPI respondió con estado ${response.status}`);
   }
-
   const data = await response.json();
-
-  return {
-    id: data.id,
-    name: data.name,
-    // Usamos el sprite oficial de alta calidad; si no existe, usamos el sprite por defecto
-    image:
-      data.sprites?.other?.['official-artwork']?.front_default ||
-      data.sprites?.front_default ||
-      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data.id}.png`,
-    types: data.types.map(t => t.type.name)
-  };
+  return data.pokemon_species;
 }
 
 /**
- * Obtiene los detalles de múltiples Pokémon en paralelo usando Promise.all.
- * Para evitar sobrecargar la API, se procesan en lotes de 10.
- * 
- * @param {Array} pokemonNames - Lista de nombres de Pokémon a consultar
- * @returns {Array} Lista de objetos con detalles de cada Pokémon
- * @throws {Error} Si alguna petición falla
- */
-async function fetchMultiplePokemonDetails(pokemonNames) {
-  const BATCH_SIZE = 10; // Tamaño del lote para no saturar la API
-  const results = [];
-
-  for (let i = 0; i < pokemonNames.length; i += BATCH_SIZE) {
-    const batch = pokemonNames.slice(i, i + BATCH_SIZE);
-    const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
-    const totalBatches = Math.ceil(pokemonNames.length / BATCH_SIZE);
-
-    updateLoadingText(`Cargando detalles... (lote ${batchNumber} de ${totalBatches})`);
-
-    // Ejecutar las peticiones del lote en paralelo
-    const batchResults = await Promise.all(
-      batch.map(name => fetchPokemonDetails(name))
-    );
-
-    results.push(...batchResults);
-  }
-
-  return results;
-}
-
-/* ============================================================
-   SECCIÓN 2: GENERACIÓN ALEATORIA DE EQUIPOS
-   ============================================================ */
-
-/**
- * Extrae el número de ID de un Pokémon a partir de la URL de su especie.
- * Necesario porque el endpoint /generation/1 devuelve URLs de especies,
- * no del Pokémon directamente.
- * 
- * Ejemplo: "https://pokeapi.co/api/v2/pokemon-species/25/" → 25
- * 
- * @param {string} url - URL de la especie del Pokémon
- * @returns {number} ID extraído de la URL
+ * Extrae el ID numérico de la URL de una especie Pokémon.
+ * Ej: "https://pokeapi.co/api/v2/pokemon-species/25/" → 25
+ *
+ * @param {string} url
+ * @returns {number}
  */
 function extractIdFromUrl(url) {
   const parts = url.replace(/\/$/, '').split('/');
@@ -154,355 +99,487 @@ function extractIdFromUrl(url) {
 }
 
 /**
- * Selecciona aleatoriamente `count` elementos únicos de un array,
- * ordenados por ID para asegurar que son todos Gen 1 (ID 1-151).
- * Filtra previamente los Pokémon cuyo ID supere el límite de Gen 1.
- * 
- * Usa el algoritmo de Fisher-Yates para una selección verdaderamente aleatoria.
- * 
- * @param {Array} pokemonList - Lista completa de especies de PokéAPI
- * @param {number} count - Cuántos Pokémon seleccionar
- * @returns {Array} Lista de `count` nombres de Pokémon únicos
+ * Obtiene los detalles completos de un Pokémon: ID, nombre, imagen,
+ * tipos, stat de ataque, stats totales y costo calculado.
+ *
+ * @param {string} name - Nombre en minúsculas
+ * @returns {Object} { id, name, image, types, attack, totalStats, cost }
  */
-function selectRandomUniquePokemons(pokemonList, count) {
-  // Filtrar para asegurarse de que son Pokémon válidos de Gen 1 (ID 1-151)
-  const gen1Pokemon = pokemonList.filter(p => {
-    const id = extractIdFromUrl(p.url);
-    return id >= 1 && id <= GEN1_POKEMON_COUNT;
-  });
-
-  if (gen1Pokemon.length < count) {
-    throw new Error(
-      `No hay suficientes Pokémon de Gen 1. Se necesitan ${count}, ` +
-      `hay ${gen1Pokemon.length} disponibles.`
-    );
+async function fetchPokemonDetails(name) {
+  const response = await fetch(`${POKEAPI_BASE_URL}/pokemon/${name}`);
+  if (!response.ok) {
+    throw new Error(`No se pudo obtener: "${name}" (${response.status})`);
   }
 
-  // Copia del array para no mutar el original (Fisher-Yates shuffle)
-  const shuffled = [...gen1Pokemon];
+  const data = await response.json();
+
+  // Mapear stats a un objeto clave→valor para acceso rápido
+  const statsMap = {};
+  data.stats.forEach(s => {
+    statsMap[s.stat.name] = s.base_stat;
+  });
+
+  const totalStats = data.stats.reduce((sum, s) => sum + s.base_stat, 0);
+
+  return {
+    id:         data.id,
+    name:       data.name,
+    image:
+      data.sprites?.other?.['official-artwork']?.front_default ||
+      data.sprites?.front_default ||
+      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data.id}.png`,
+    types:      data.types.map(t => t.type.name),
+    attack:     statsMap['attack'] || 0,
+    totalStats,
+    cost:       calculateCost(totalStats)
+  };
+}
+
+/**
+ * Carga todos los Pokémon de Gen 1 en lotes de BATCH_SIZE,
+ * actualizando la barra de progreso en pantalla.
+ */
+async function loadAllPokemon() {
+  setLoading(true);
+  teamBuilder.style.display = 'none';
+
+  try {
+    // 1. Obtener lista de especies
+    const speciesList = await fetchFirstGenPokemonList();
+
+    // 2. Filtrar solo Gen 1 (ID 1-151) y ordenar por ID
+    const gen1Sorted = speciesList
+      .filter(p => {
+        const id = extractIdFromUrl(p.url);
+        return id >= 1 && id <= GEN1_POKEMON_COUNT;
+      })
+      .sort((a, b) => extractIdFromUrl(a.url) - extractIdFromUrl(b.url));
+
+    const names = gen1Sorted.map(p => p.name);
+    const total = names.length;
+
+    allPokemon = [];
+
+    // 3. Cargar detalles en lotes
+    for (let i = 0; i < names.length; i += BATCH_SIZE) {
+      const batch       = names.slice(i, i + BATCH_SIZE);
+      const batchResult = await Promise.all(batch.map(n => fetchPokemonDetails(n)));
+
+      allPokemon.push(...batchResult);
+
+      // Actualizar barra de progreso
+      const pct = Math.round(((i + batch.length) / total) * 100);
+      loadingProgressFill.style.width = `${pct}%`;
+      loadingSubtext.textContent      = `Cargando Pokédex... ${allPokemon.length} / ${total}`;
+    }
+
+    console.log(`✅ ${allPokemon.length} Pokémon de Gen 1 cargados.`);
+
+  } catch (error) {
+    console.error('❌ Error al cargar el Pokédex:', error);
+    showToast('Error al cargar el Pokédex. Recarga la página.', 'error', 8000);
+  } finally {
+    setLoading(false);
+    teamBuilder.style.display = 'block';
+    renderMyTeamSlots();
+    updateBudgetBar();
+    renderPokedex();
+  }
+}
+
+/* ============================================================
+   SECCIÓN 2: GESTIÓN DEL EQUIPO
+   ============================================================ */
+
+/** Suma los créditos gastados en el equipo actual */
+function getUsedBudget() {
+  return myTeam.reduce((sum, p) => sum + p.cost, 0);
+}
+
+/** Determina si se puede añadir un Pokémon al equipo */
+function canAdd(pokemon) {
+  if (myTeam.length >= TEAM_SIZE)                        return false;
+  if (myTeam.find(p => p.id === pokemon.id))             return false;
+  if (getUsedBudget() + pokemon.cost > BUDGET)           return false;
+  return true;
+}
+
+/** Devuelve true si el Pokémon ya está en el equipo */
+function isInTeam(pokemonId) {
+  return !!myTeam.find(p => p.id === pokemonId);
+}
+
+/**
+ * Añade un Pokémon al equipo del jugador, con validaciones.
+ * @param {Object} pokemon
+ */
+function addToTeam(pokemon) {
+  if (myTeam.length >= TEAM_SIZE) {
+    showToast('¡Tu equipo ya tiene 6 Pokémon!', 'error');
+    return;
+  }
+  if (isInTeam(pokemon.id)) {
+    showToast(`${capitalize(pokemon.name)} ya está en tu equipo.`, 'error');
+    return;
+  }
+  if (getUsedBudget() + pokemon.cost > BUDGET) {
+    showToast(
+      `¡Sin presupuesto para ${capitalize(pokemon.name)}! (Costo: ${pokemon.cost} créditos)`,
+      'error'
+    );
+    return;
+  }
+
+  myTeam.push(pokemon);
+  updateAllUI();
+  showToast(`${capitalize(pokemon.name)} añadido al equipo ✓`, 'success', 2000);
+}
+
+/**
+ * Retira un Pokémon del equipo por su ID.
+ * @param {number} pokemonId
+ */
+function removeFromTeam(pokemonId) {
+  const pokemon = myTeam.find(p => p.id === pokemonId);
+  myTeam = myTeam.filter(p => p.id !== pokemonId);
+  updateAllUI();
+  if (pokemon) {
+    showToast(`${capitalize(pokemon.name)} retirado del equipo.`, 'info', 2000);
+  }
+}
+
+// Exponer a onclick inline en el HTML renderizado
+window.addToTeam_id    = (id) => { const p = allPokemon.find(x => x.id === id); if (p) addToTeam(p); };
+window.removeFromTeam  = removeFromTeam;
+
+/* ============================================================
+   SECCIÓN 3: ACTUALIZACIÓN DE LA INTERFAZ
+   ============================================================ */
+
+/** Llama a todos los renders en el orden correcto */
+function updateAllUI() {
+  renderMyTeamSlots();
+  updateBudgetBar();
+  updateBattleButton();
+  renderPokedex();
+}
+
+/** Actualiza la barra de presupuesto con color dinámico */
+function updateBudgetBar() {
+  const used = getUsedBudget();
+  const pct  = Math.min((used / BUDGET) * 100, 100);
+
+  budgetFill.style.width      = `${pct}%`;
+  budgetText.textContent      = `${used} / ${BUDGET} créditos`;
+
+  budgetFill.className = 'budget-fill';
+  if      (pct > 90) budgetFill.classList.add('budget-fill--danger');
+  else if (pct > 65) budgetFill.classList.add('budget-fill--warning');
+  else               budgetFill.classList.add('budget-fill--ok');
+}
+
+/** Habilita el botón de combate solo si el equipo está completo */
+function updateBattleButton() {
+  btnBattle.disabled = myTeam.length < TEAM_SIZE;
+}
+
+/** Renderiza los 6 slots del equipo propio */
+function renderMyTeamSlots() {
+  teamCount.textContent = `(${myTeam.length}/${TEAM_SIZE})`;
+
+  const slotsHTML = Array.from({ length: TEAM_SIZE }, (_, i) => {
+    const pokemon = myTeam[i];
+    if (pokemon) {
+      const displayName = capitalize(pokemon.name);
+      return `
+        <div class="team-slot team-slot--filled" data-id="${pokemon.id}">
+          <img
+            class="team-slot__img"
+            src="${pokemon.image}"
+            alt="${displayName}"
+            loading="lazy"
+            onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png'"
+          >
+          <p class="team-slot__name">${displayName}</p>
+          <p class="team-slot__cost">💰 ${pokemon.cost}</p>
+          <p class="team-slot__attack">⚔️ ATK ${pokemon.attack}</p>
+          <button
+            class="team-slot__remove"
+            onclick="removeFromTeam(${pokemon.id})"
+            aria-label="Quitar ${displayName} del equipo"
+          >✕</button>
+        </div>
+      `;
+    }
+    return `
+      <div class="team-slot team-slot--empty" aria-label="Slot vacío">
+        <div class="team-slot__placeholder">?</div>
+      </div>
+    `;
+  });
+
+  myTeamSlots.innerHTML = slotsHTML.join('');
+}
+
+/** Renderiza el Pokédex completo, aplicando el filtro de búsqueda */
+function renderPokedex() {
+  if (allPokemon.length === 0) return;
+
+  const query    = searchQuery.toLowerCase().trim();
+  const filtered = allPokemon.filter(p =>
+    !query || p.name.includes(query) || String(p.id).includes(query)
+  );
+
+  if (filtered.length === 0) {
+    pokedexGrid.innerHTML = `<p class="pokedex-empty">No se encontraron Pokémon para "${searchQuery}".</p>`;
+    return;
+  }
+
+  const html = filtered.map(pokemon => {
+    const inTeam     = isInTeam(pokemon.id);
+    const addable    = canAdd(pokemon);
+    const displayName = capitalize(pokemon.name);
+    const typeBadges = pokemon.types
+      .map(t => `<span class="type-badge type-badge--${t}">${t}</span>`)
+      .join('');
+
+    const cardClass = [
+      'pkdx-card',
+      inTeam ? 'pkdx-card--in-team' : '',
+      (!addable && !inTeam) ? 'pkdx-card--disabled' : ''
+    ].filter(Boolean).join(' ');
+
+    const btnClass  = inTeam ? 'pkdx-card__btn--remove' : 'pkdx-card__btn--add';
+    const btnAction = inTeam
+      ? `removeFromTeam(${pokemon.id})`
+      : `addToTeam_id(${pokemon.id})`;
+    const btnLabel  = inTeam ? '✕ Quitar' : '+ Añadir';
+    const btnDisabled = (!addable && !inTeam) ? 'disabled' : '';
+
+    return `
+      <article class="${cardClass}" data-pokemon-id="${pokemon.id}">
+        <p class="pkdx-card__id">#${String(pokemon.id).padStart(3, '0')}</p>
+        <div class="pkdx-card__img-wrap">
+          <img
+            class="pkdx-card__img"
+            src="${pokemon.image}"
+            alt="${displayName}"
+            loading="lazy"
+            onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png'"
+          >
+        </div>
+        <h3 class="pkdx-card__name">${displayName}</h3>
+        <div class="pkdx-card__types">${typeBadges}</div>
+        <div class="pkdx-card__stats">
+          <span class="pkdx-stat">⚔️ ${pokemon.attack}</span>
+          <span class="pkdx-cost">💰 ${pokemon.cost}</span>
+        </div>
+        <button
+          class="pkdx-card__btn ${btnClass}"
+          onclick="${btnAction}"
+          ${btnDisabled}
+          aria-label="${inTeam ? `Quitar ${displayName}` : `Añadir ${displayName} al equipo`}"
+        >${btnLabel}</button>
+      </article>
+    `;
+  }).join('');
+
+  pokedexGrid.innerHTML = html;
+}
+
+/* ============================================================
+   SECCIÓN 4: SISTEMA DE COMBATE
+   ============================================================ */
+
+/**
+ * Mezcla un array usando el algoritmo Fisher-Yates.
+ * @param {Array} arr
+ * @returns {Array} Nuevo array mezclado
+ */
+function shuffleArray(arr) {
+  const shuffled = [...arr];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-
-  // Tomar los primeros `count` elementos del array mezclado
-  return shuffled.slice(0, count).map(p => p.name);
+  return shuffled;
 }
 
 /**
- * Agrupa un array plano de Pokémon en equipos de tamaño fijo.
- * 
- * @param {Array} pokemons - Array plano con todos los Pokémon (36 en total)
- * @param {number} teamSize - Tamaño de cada equipo (6)
- * @returns {Array} Array de arrays: [[equipo1], [equipo2], ...]
+ * Calcula la sumatoria de Ataque de un equipo completo.
+ * Este valor determina el ganador del combate.
+ *
+ * @param {Array} team - Array de objetos Pokémon con propiedad `attack`
+ * @returns {number} Ataque total del equipo
  */
-function groupIntoTeams(pokemons, teamSize) {
-  const teams = [];
-  for (let i = 0; i < pokemons.length; i += teamSize) {
-    teams.push(pokemons.slice(i, i + teamSize));
+function calculateTeamAttack(team) {
+  return team.reduce((sum, p) => sum + p.attack, 0);
+}
+
+/**
+ * Maneja el flujo completo de combate:
+ * 1. Genera 4 rivales aleatorios (excluyendo mi equipo)
+ * 2. Calcula mi ataque total vs el de cada rival
+ * 3. Renderiza los resultados (rivales: solo imagen)
+ * 4. Guarda en Firebase
+ */
+async function handleBattle() {
+  if (myTeam.length < TEAM_SIZE) return;
+
+  // Excluir Pokémon que ya están en mi equipo
+  const myIds    = new Set(myTeam.map(p => p.id));
+  const pool     = allPokemon.filter(p => !myIds.has(p.id));
+
+  if (pool.length < NUM_RIVALS * TEAM_SIZE) {
+    showToast('No hay suficientes Pokémon disponibles para los rivales.', 'error');
+    return;
   }
-  return teams;
+
+  // Mezclar y tomar 4×6 Pokémon únicos
+  const shuffled  = shuffleArray(pool);
+  const rivalTeams = Array.from({ length: NUM_RIVALS }, (_, i) =>
+    shuffled.slice(i * TEAM_SIZE, (i + 1) * TEAM_SIZE)
+  );
+
+  const myAttack = calculateTeamAttack(myTeam);
+
+  // Renderizar arena de batalla
+  myTotalAttackEl.textContent = myAttack;
+  renderRivals(rivalTeams, myAttack);
+
+  // Mostrar sección de batalla y hacer scroll
+  battleArena.hidden = false;
+  battleArena.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Guardar en Firebase (sin bloquear la UI)
+  try {
+    await saveBattleResult(myTeam, rivalTeams, myAttack);
+  } catch (e) {
+    console.warn('⚠️ No se pudo guardar en Firebase:', e.message);
+  }
 }
 
-/* ============================================================
-   SECCIÓN 3: RENDERIZADO DE LA INTERFAZ
-   ============================================================ */
-
 /**
- * Genera el HTML de una tarjeta de Pokémon individual.
- * Incluye ID, imagen, nombre y tipos con sus colores correspondientes.
- * 
- * @param {Object} pokemon - Objeto con { id, name, image, types }
- * @returns {string} HTML de la tarjeta
+ * Renderiza los 4 equipos rivales.
+ * Solo se muestra la IMAGEN de cada Pokémon rival.
+ * No se muestran nombre, tipos, ni stats (efecto misterioso).
+ *
+ * @param {Array} rivalTeams  - Array de 4 equipos de 6 Pokémon
+ * @param {number} myAttack   - Ataque total de mi equipo
  */
-function createPokemonCardHTML(pokemon) {
-  // Generar badges de tipos con los colores correctos
-  const typeBadgesHTML = pokemon.types
-    .map(type => `<span class="type-badge type-badge--${type}">${type}</span>`)
-    .join('');
+function renderRivals(rivalTeams, myAttack) {
+  const html = rivalTeams.map((team, i) => {
+    const rivalAttack = calculateTeamAttack(team);
+    const result      = myAttack > rivalAttack ? 'win'
+                      : myAttack < rivalAttack ? 'loss'
+                      : 'tie';
 
-  // Nombre formateado con primera letra en mayúscula
-  const displayName = pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1);
+    const resultText = result === 'win'  ? '🏆 ¡VICTORIA!'
+                     : result === 'loss' ? '💀 DERROTA'
+                     : '🤝 EMPATE';
 
-  // Número formateado con ceros a la izquierda (ej: #025)
-  const displayId = `#${String(pokemon.id).padStart(3, '0')}`;
-
-  return `
-    <article class="pokemon-card" data-pokemon-id="${pokemon.id}">
-      <p class="pokemon-card__id">${displayId}</p>
-      <div class="pokemon-card__image-wrapper">
+    // Tarjetas de imagen únicamente — sin nombre, sin tipo, sin stats
+    const pokemonImgs = team.map(p => `
+      <div class="rival-pokemon">
         <img
-          class="pokemon-card__image"
-          src="${pokemon.image}"
-          alt="${displayName}"
+          class="rival-pokemon__img"
+          src="${p.image}"
+          alt="Pokémon rival"
           loading="lazy"
-          onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png'"
+          onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png'"
         >
       </div>
-      <h3 class="pokemon-card__name">${displayName}</h3>
-      <div class="pokemon-card__types">
-        ${typeBadgesHTML}
+    `).join('');
+
+    return `
+      <div class="rival-team result--${result}">
+        <div class="rival-team-header">
+          <h3 class="rival-team-title">Rival ${i + 1}</h3>
+          <div class="rival-result-badge result--${result}">${resultText}</div>
+        </div>
+        <div class="rival-attack-info">
+          Ataque rival: <strong>${rivalAttack}</strong>
+          &nbsp;·&nbsp;
+          Tu ataque: <strong>${myAttack}</strong>
+        </div>
+        <div class="rival-pokemon-grid">
+          ${pokemonImgs}
+        </div>
       </div>
-    </article>
-  `;
+    `;
+  }).join('');
+
+  rivalsContainer.innerHTML = html;
 }
 
-/**
- * Genera el HTML de un bloque de equipo completo.
- * Contiene el encabezado del equipo y la cuadrícula de 6 tarjetas Pokémon.
- * 
- * @param {Array} team - Array de 6 objetos Pokémon
- * @param {number} teamIndex - Índice del equipo (0-5), usado para el número
- * @returns {string} HTML del bloque de equipo
- */
-function createTeamBlockHTML(team, teamIndex) {
-  const teamNumber = teamIndex + 1;
-  const pokemonCardsHTML = team.map(createPokemonCardHTML).join('');
-
-  return `
-    <section class="team-block" aria-label="Equipo ${teamNumber}">
-      <header class="team-header">
-        <span class="team-header__number">${teamNumber}</span>
-        <h2 class="team-header__label">Equipo ${teamNumber}</h2>
-      </header>
-      <div class="team-grid">
-        ${pokemonCardsHTML}
-      </div>
-    </section>
-  `;
+/** Lanza un nuevo combate (misma lógica, nuevos rivales aleatorios) */
+function handleRematch() {
+  handleBattle();
 }
 
-/**
- * Renderiza todos los equipos en el contenedor principal del DOM.
- * Limpia el contenedor previo antes de insertar el nuevo contenido.
- * 
- * @param {Array} teams - Array de 6 equipos, cada uno con 6 Pokémon
- */
-function renderTeams(teams) {
-  // Limpiar contenido previo
-  teamsContainer.innerHTML = '';
-
-  // Ocultar estado vacío
-  emptyState.style.display = 'none';
-
-  // Generar y añadir HTML de cada equipo
-  const teamsHTML = teams.map((team, index) => createTeamBlockHTML(team, index)).join('');
-  teamsContainer.innerHTML = teamsHTML;
-}
-
-/**
- * Muestra la fecha y hora de la generación guardada.
- * 
- * @param {Date} date - Objeto Date con la fecha de creación
- */
-function showGenerationInfo(date) {
-  const formattedDate = date.toLocaleString('es-MX', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-  generationDate.textContent = formattedDate;
-  generationInfo.style.display = 'block';
+/** Vuelve al constructor de equipo */
+function handleChangeTeam() {
+  battleArena.hidden = true;
+  teamBuilder.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* ============================================================
-   SECCIÓN 4: HELPERS DE INTERFAZ (Loading, Toasts, Botones)
+   SECCIÓN 5: HELPERS DE INTERFAZ
    ============================================================ */
 
 /**
- * Muestra u oculta el indicador de carga.
- * @param {boolean} show - true para mostrar, false para ocultar
+ * Muestra u oculta el overlay de carga.
+ * @param {boolean} show
  */
 function setLoading(show) {
-  if (show) {
-    loadingOverlay.classList.add('active');
-  } else {
-    loadingOverlay.classList.remove('active');
-  }
+  loadingOverlay.classList.toggle('active', show);
 }
 
 /**
- * Actualiza el texto secundario del indicador de carga
- * para informar al usuario qué paso se está ejecutando.
- * 
- * @param {string} text - Texto descriptivo del paso actual
- */
-function updateLoadingText(text) {
-  loadingSubtext.textContent = text;
-}
-
-/**
- * Habilita o deshabilita todos los botones de acción.
- * Evita que el usuario haga múltiples solicitudes simultáneas.
- * 
- * @param {boolean} disabled - true para deshabilitar, false para habilitar
- */
-function setButtonsDisabled(disabled) {
-  btnGenerate.disabled = disabled;
-  btnLoadLast.disabled = disabled;
-}
-
-/**
- * Muestra un toast de notificación con auto-desaparición.
- * 
- * @param {string} message - Mensaje a mostrar
- * @param {'success'|'error'|'info'} type - Tipo de toast (afecta el color)
- * @param {number} duration - Duración en ms antes de desaparecer (defecto: 4000ms)
+ * Muestra un toast de notificación que desaparece automáticamente.
+ *
+ * @param {string} message
+ * @param {'success'|'error'|'info'} type
+ * @param {number} duration - Duración en ms (defecto 4000)
  */
 function showToast(message, type = 'info', duration = 4000) {
-  const icons = {
-    success: '✅',
-    error: '❌',
-    info: 'ℹ️'
-  };
-
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
   const toast = document.createElement('div');
   toast.className = `toast toast--${type}`;
   toast.setAttribute('role', 'alert');
   toast.innerHTML = `<span aria-hidden="true">${icons[type]}</span> ${message}`;
-
   toastContainer.appendChild(toast);
+  setTimeout(() => toast.remove(), duration);
+}
 
-  // Remover el toast del DOM después de que la animación termina
-  setTimeout(() => {
-    toast.remove();
-  }, duration);
+/**
+ * Capitaliza la primera letra de un string.
+ * @param {string} str
+ * @returns {string}
+ */
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 /* ============================================================
-   SECCIÓN 5: FLUJO PRINCIPAL DE LA APLICACIÓN
+   SECCIÓN 6: INICIALIZACIÓN
    ============================================================ */
 
-/**
- * Maneja el flujo completo de generación de equipos:
- * 1. Deshabilita botones y muestra loading
- * 2. Obtiene lista de Pokémon Gen 1 de PokéAPI
- * 3. Selecciona 36 Pokémon únicos aleatoriamente
- * 4. Obtiene detalles de cada uno
- * 5. Los agrupa en 6 equipos de 6
- * 6. Los renderiza en pantalla
- * 7. Los guarda en Firebase Firestore
- * 8. Muestra confirmación al usuario
- */
-async function handleGenerate() {
-  // --- Paso 0: Preparar UI para carga ---
-  setButtonsDisabled(true);
-  setLoading(true);
-  teamsContainer.innerHTML = '';
-  generationInfo.style.display = 'none';
-  emptyState.style.display = 'none';
-
-  try {
-    // --- Paso 1: Obtener lista de Pokémon de Gen 1 ---
-    const pokemonList = await fetchFirstGenPokemonList();
-
-    // --- Paso 2: Seleccionar 36 Pokémon únicos aleatoriamente ---
-    updateLoadingText('Seleccionando Pokémon al azar...');
-    const selectedNames = selectRandomUniquePokemons(pokemonList, TOTAL_POKEMON_NEEDED);
-
-    // --- Paso 3: Obtener detalles de los 36 Pokémon seleccionados ---
-    const pokemonDetails = await fetchMultiplePokemonDetails(selectedNames);
-
-    // --- Paso 4: Agrupar en 6 equipos de 6 Pokémon ---
-    updateLoadingText('Formando equipos...');
-    const teams = groupIntoTeams(pokemonDetails, TEAM_SIZE);
-
-    // --- Paso 5: Renderizar en pantalla ---
-    renderTeams(teams);
-
-    // --- Paso 6: Guardar en Firebase Firestore ---
-    updateLoadingText('Guardando en la nube...');
-    await saveTeamGeneration(teams);
-
-    // Mostrar fecha actual como info de la generación
-    showGenerationInfo(new Date());
-    showToast('¡Equipos generados y guardados correctamente!', 'success');
-
-  } catch (error) {
-    // --- Manejo de errores: mostrar mensaje amigable al usuario ---
-    console.error('❌ Error durante la generación:', error);
-    showToast(`Error: ${error.message}`, 'error', 6000);
-    // Restaurar el estado vacío si no se pudieron renderizar equipos
-    if (teamsContainer.innerHTML === '') {
-      emptyState.style.display = 'block';
-    }
-  } finally {
-    // --- Siempre: ocultar loading y rehabilitar botones ---
-    setLoading(false);
-    setButtonsDisabled(false);
-  }
-}
-
-/**
- * Maneja el flujo de carga del último resultado guardado en Firestore:
- * 1. Deshabilita botones y muestra loading
- * 2. Consulta el último documento en Firestore
- * 3. Si existe, extrae los equipos y los renderiza
- * 4. Si no existe, informa al usuario
- */
-async function handleLoadLast() {
-  // --- Preparar UI ---
-  setButtonsDisabled(true);
-  setLoading(true);
-  updateLoadingText('Cargando desde Firebase...');
-  teamsContainer.innerHTML = '';
-  generationInfo.style.display = 'none';
-  emptyState.style.display = 'none';
-
-  try {
-    // --- Consultar Firestore ---
-    const lastGeneration = await loadLastGeneration();
-
-    if (!lastGeneration) {
-      // No hay generaciones previas en la base de datos
-      showToast('No hay generaciones guardadas. ¡Genera la primera!', 'info');
-      emptyState.style.display = 'block';
-      return;
-    }
-
-    // --- Extraer los equipos del documento de Firestore ---
-    // El documento tiene teams[].pokemons[], hay que convertirlo al formato
-    // que acepta renderTeams: Array de Arrays de objetos Pokémon
-    const teams = lastGeneration.teams.map(team => team.pokemons);
-
-    // --- Renderizar en pantalla ---
-    renderTeams(teams);
-    showGenerationInfo(lastGeneration.createdAt);
-    showToast('Último resultado cargado correctamente.', 'success');
-
-  } catch (error) {
-    console.error('❌ Error al cargar el último resultado:', error);
-    showToast(`Error: ${error.message}`, 'error', 6000);
-    emptyState.style.display = 'block';
-  } finally {
-    setLoading(false);
-    setButtonsDisabled(false);
-  }
-}
-
-/* ============================================================
-   SECCIÓN 6: INICIALIZACIÓN Y EVENTOS
-   ============================================================ */
-
-/**
- * Inicializa la aplicación:
- * - Registra los listeners de los botones
- * - Muestra el estado inicial (vacío)
- */
 function init() {
-  // Registrar el evento del botón principal
-  btnGenerate.addEventListener('click', handleGenerate);
+  // Registrar eventos
+  btnBattle.addEventListener('click', handleBattle);
+  btnRematch.addEventListener('click', handleRematch);
+  btnChangeTeam.addEventListener('click', handleChangeTeam);
 
-  // Registrar el evento del botón de carga
-  btnLoadLast.addEventListener('click', handleLoadLast);
+  pokedexSearch.addEventListener('input', e => {
+    searchQuery = e.target.value;
+    renderPokedex();
+  });
 
-  // Mostrar estado inicial vacío
-  emptyState.style.display = 'block';
+  // Iniciar carga del Pokédex completo
+  loadAllPokemon();
 
-  console.log('🚀 Pokémon Team Generator iniciado correctamente.');
+  console.log('🚀 Pokémon Battle Arena iniciado correctamente.');
 }
 
-// Ejecutar la inicialización cuando el módulo carga
 init();
